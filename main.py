@@ -112,8 +112,13 @@ def check_word(input_word: str, current: int) -> str:
 
 def game(message):
     inp = message.text.lower()
-    # print(inp)
     global current
+    if inp == '/stop':
+        bot.send_message(message.from_user.id, "You lost the game")
+        bot.send_message(ind_game[1 - current], "You won the game")
+        bot.register_next_step_handler(message, start)
+    # print(inp)
+
     if current == ind_game.index(message.from_user.id):
         result_string = check_word(inp, current)
         if result_string == "ok":
