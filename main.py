@@ -7,6 +7,8 @@ import config
 token = config.BOT_TOKEN
 bot = telebot.TeleBot(token)
 
+dictionary = enchant.Dict("en_US")
+dictionary_rus = enchant.Dict("ru_RU")
 dict_word = {}
 common_list_ind = []
 common_list_names = []
@@ -71,8 +73,6 @@ def start_game(message):
     question = f"Enter '/play' to start the game with {message.from_user.first_name}"
     bot.send_message(common_list_ind[ind], text=question, reply_markup=keyboard)
 
-    # bot.send_message(common_list_ind[ind], f"Enter '/play' to start the game with {message.from_user.first_name}")
-
     ind_game.append(message.from_user.id)
     ind_game.append(int(common_list_ind[ind]))
 
@@ -81,30 +81,38 @@ def start_game(message):
     bot.register_next_step_handler(message, game)
 
 
+def check_letters_in_word(input_word: str) -> bool:
+    temp_dict = dict_word.copy()
+    for i in input_word:
+        if i not in temp_dict or temp_dict.get(i) == 0:
+            return False
+        else:
+            temp_dict[i] -= 1
+    return True
+
+
+def check_existance(input_word: str) -> bool:
+    return dictionary.check(input_word) or dictionary_rus.check(input_word)
+
+
 def check_word(input_word: str, current: int) -> str:
     if input_word in common_set:
         return "This word was used, try again"
 
-    flag = True
-    temp_dict = dict_word.copy()
-    for i in input_word:
-        if i not in temp_dict or temp_dict.get(i) == 0:
-            flag = False
+    if check_letters_in_word(input_word):
+        if check_existance(input_word):
+            bot.send_message(ind_game[1 - current], f"New word of your opponent is {input_word}")
+            bot.send_message(ind_game[1 - current], f"It's your turn now")
+            common_set.add(input_word)
+            return "ok"
         else:
-            temp_dict[i] -= 1
-    if flag == True:
-        bot.send_message(ind_game[1 - current], f"New word of your opponent is {input_word}")
-        bot.send_message(ind_game[1 - current], f"It's your turn now")
-        common_set.add(input_word)
-        # print(common_set)
-        return "ok"
-    else:
-        return "It can't be here, check your input"
+            return "Such word doesn't exist"
+    return "It can't be here, check your input"
 
 
 def game(message):
     inp = message.text.lower()
-    print(inp)
+    # print(inp)
     global current
     if current == ind_game.index(message.from_user.id):
         result_string = check_word(inp, current)
